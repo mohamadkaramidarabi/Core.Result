@@ -15,8 +15,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Mohammad/Core.Result</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/Mohammad/Core.Result</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mohamadkaramidarabi/Core.Result</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/mohamadkaramidarabi/Core.Result</PackageProjectUrl>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
