@@ -1,0 +1,29 @@
+---
+description: Do not add comments to source code in this project
+globs: **/*.{cs,csproj}
+alwaysApply: true
+---
+
+# No Code Comments
+
+Do not add comments to source code in this repository.
+
+This includes:
+- `//` single-line comments
+- `/* */` block comments
+- `///` XML documentation comments
+- `#region` / `#endregion` used only for organization
+
+Write self-explanatory code instead: clear names, small functions, and straightforward structure.
+
+## When editing existing code
+
+- Do not add new comments
+- Remove comments you touch when making related edits
+- Do not add XML docs to public APIs
+
+## Exceptions
+
+Only add a comment when the user explicitly asks for one, or when required by an external tool (e.g. a suppression attribute that must name a rule ID).
+
+Markdown documentation files (`README.md`, `PUBLISHING.md`) are not source code — updating those is fine.
