@@ -152,6 +152,28 @@ public Success<Customer> CreateCustomer(CreateCustomerRequest request)
 
 - .NET 10.0
 
+## Publishing
+
+For maintainers releasing a new version to GitHub and NuGet, see **[PUBLISHING.md](PUBLISHING.md)**.
+
+Quick reference:
+
+```powershell
+# 1. Test
+dotnet test Core.Result.Test\Core.Result.Test.csproj -c Release
+
+# 2. Bump <Version> in Core.Result.csproj, then pack
+dotnet pack Core.Result.csproj -c Release
+
+# 3. Push to GitHub
+git push origin main
+
+# 4. Push to NuGet
+dotnet nuget push "bin\Release\Core.Result.1.0.0.nupkg" `
+  --api-key YOUR_NUGET_API_KEY `
+  --source https://api.nuget.org/v3/index.json
+```
+
 ## License
 
 MIT
