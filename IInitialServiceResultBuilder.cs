@@ -1,33 +1,20 @@
 ﻿namespace Core.Result
 {
-    /// <summary>
-    /// Marker interface for initial result builder entry points.
-    /// </summary>
     public interface IInitialServiceResultBuilder
     {
     }
 
-    /// <summary>
-    /// Starts configuration of a success result.
-    /// </summary>
-    /// <typeparam name="T">The type of the success payload.</typeparam>
-    public interface IInitialSuccessResultBuilder<T> : IInitialServiceResultBuilder
+    public interface IInitialSuccessResultBuilder<T, TSuccessStatus, TFailureStatus> : IInitialServiceResultBuilder
+        where TSuccessStatus : struct, Enum
+        where TFailureStatus : struct, Enum
     {
-        /// <summary>
-        /// Initializes a success result for further configuration.
-        /// </summary>
-        IConfigureSuccessResultBuilder<T> Success();
+        IConfigureSuccessResultBuilder<T, TSuccessStatus, TFailureStatus> Success(TSuccessStatus status);
     }
 
-    /// <summary>
-    /// Starts configuration of a failure result.
-    /// </summary>
-    /// <typeparam name="T">The type that would have been returned on success.</typeparam>
-    public interface IInitialFailureResultBuilder<T> : IInitialServiceResultBuilder
+    public interface IInitialFailureResultBuilder<T, TSuccessStatus, TFailureStatus> : IInitialServiceResultBuilder
+        where TSuccessStatus : struct, Enum
+        where TFailureStatus : struct, Enum
     {
-        /// <summary>
-        /// Initializes a failure result for further configuration.
-        /// </summary>
-        IConfigureFailureResultBuilder<T> Failure();
+        IConfigureFailureResultBuilder<T, TSuccessStatus, TFailureStatus> Failure(TFailureStatus status);
     }
 }

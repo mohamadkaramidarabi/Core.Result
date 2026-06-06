@@ -7,7 +7,7 @@
 
     <IsPackable>true</IsPackable>
     <PackageId>Core.Result</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Mohammad</Authors>
     <Company>Mohammad</Company>
     <Description>A lightweight .NET library implementing the Result pattern with a fluent builder API for explicit success and failure outcomes.</Description>
@@ -18,7 +18,7 @@
     <RepositoryUrl>https://github.com/mohamadkaramidarabi/Core.Result</RepositoryUrl>
     <PackageProjectUrl>https://github.com/mohamadkaramidarabi/Core.Result</PackageProjectUrl>
 
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

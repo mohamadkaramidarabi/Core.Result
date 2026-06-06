@@ -2,63 +2,69 @@
 namespace Core.Result
 {
 
-    internal class SuccessResultBuilder<T> :
-        IInitialSuccessResultBuilder<T>,
-        IConfigureSuccessResultBuilder<T>
+    internal class SuccessResultBuilder<T, TSuccessStatus, TFailureStatus> :
+        IInitialSuccessResultBuilder<T, TSuccessStatus, TFailureStatus>,
+        IConfigureSuccessResultBuilder<T, TSuccessStatus, TFailureStatus>
+        where TSuccessStatus : struct, Enum
+        where TFailureStatus : struct, Enum
     {
         internal SuccessResultBuilder() { }
-        private Success<T>? _successResult;
-        public Success<T> Build()
+        private Success<T, TSuccessStatus, TFailureStatus>? _successResult;
+
+        public Success<T, TSuccessStatus, TFailureStatus> Build()
         {
             return _successResult ?? throw new InvalidOperationException("Success result with data is not initialized.");
         }
-        public IConfigureSuccessResultBuilder<T> WithMessage(string? message)
+
+        public IConfigureSuccessResultBuilder<T, TSuccessStatus, TFailureStatus> WithMessage(string? message)
         {
             _successResult?.Message = message;
             return this;
         }
 
-
-        public IConfigureSuccessResultBuilder<T> WithData(T? data)
+        public IConfigureSuccessResultBuilder<T, TSuccessStatus, TFailureStatus> WithData(T? data)
         {
             _successResult?.Data = data;
             return this;
         }
 
-        public IConfigureSuccessResultBuilder<T> Success()
+        public IConfigureSuccessResultBuilder<T, TSuccessStatus, TFailureStatus> Success(TSuccessStatus status)
         {
-            _successResult = new Success<T>();
+            _successResult = new Success<T, TSuccessStatus, TFailureStatus> { Status = status };
             return this;
         }
     }
-    internal class  FailureResultBuilder<T> :
-        IInitialFailureResultBuilder<T>,
-        IConfigureFailureResultBuilder<T>
+
+    internal class FailureResultBuilder<T, TSuccessStatus, TFailureStatus> :
+        IInitialFailureResultBuilder<T, TSuccessStatus, TFailureStatus>,
+        IConfigureFailureResultBuilder<T, TSuccessStatus, TFailureStatus>
+        where TSuccessStatus : struct, Enum
+        where TFailureStatus : struct, Enum
     {
         internal FailureResultBuilder() { }
-        private Failure<T>? _failureResult;
+        private Failure<T, TSuccessStatus, TFailureStatus>? _failureResult;
 
-        public IConfigureFailureResultBuilder<T> AppendErrors(List<string> errors)
+        public IConfigureFailureResultBuilder<T, TSuccessStatus, TFailureStatus> AppendErrors(List<string> errors)
         {
             _failureResult?.AppendError(errors);
             return this;
         }
 
-        public Failure<T> Build()
+        public Failure<T, TSuccessStatus, TFailureStatus> Build()
         {
             return _failureResult ?? throw new InvalidOperationException("Failure result is not initialized.");
         }
 
-        public IConfigureFailureResultBuilder<T> Failure()
+        public IConfigureFailureResultBuilder<T, TSuccessStatus, TFailureStatus> Failure(TFailureStatus status)
         {
-            _failureResult = new Failure<T>();
+            _failureResult = new Failure<T, TSuccessStatus, TFailureStatus> { Status = status };
             return this;
         }
-        public IConfigureFailureResultBuilder<T> WithMessage(string message)
+
+        public IConfigureFailureResultBuilder<T, TSuccessStatus, TFailureStatus> WithMessage(string message)
         {
             _failureResult!.Message = message;
             return this;
         }
-
     }
 }

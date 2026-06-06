@@ -1,10 +1,11 @@
 # Core.Result
 
-A lightweight .NET library that implements the **Result pattern** with a fluent builder API. Return explicit success or failure outcomes from your services instead of relying on exceptions for expected error paths.
+A lightweight .NET library that implements the **Result pattern** with a fluent builder API. Return explicit success or failure outcomes from your domain services instead of relying on exceptions for expected error paths.
 
 ## Features
 
-- Generic `Result<T>` with `Success<T>` and `Failure<T>` variants
+- Generic `Result<T, TSuccessStatus, TFailureStatus>` with `Success` and `Failure` variants
+- Domain-defined status enums — each bounded context defines its own business vocabulary
 - Fluent builder API for configuring results with data, messages, and errors
 - `Unit` type for operations that succeed without a meaningful payload
 - Zero third-party dependencies
@@ -21,6 +22,24 @@ Or via Package Manager:
 Install-Package Core.Result
 ```
 
+## Domain Layer Setup
+
+Define success and failure status enums in your domain project using business language:
+
+```csharp
+public enum OrderSuccessStatus { Placed, Cancelled, Shipped }
+
+public enum OrderFailureStatus
+{
+    NotFound,
+    AlreadyShipped,
+    InvalidQuantity,
+    InsufficientStock
+}
+```
+
+Map domain statuses to HTTP, events, or UI in the **application layer** — not inside domain logic.
+
 ## Quick Start
 
 ### Success with data
@@ -28,14 +47,16 @@ Install-Package Core.Result
 ```csharp
 using Core.Result;
 
-var result = Result<User>.InitSuccess()
-    .WithData(user)
-    .WithMessage("User created successfully")
+var result = Result<Order, OrderSuccessStatus, OrderFailureStatus>
+    .InitSuccess(OrderSuccessStatus.Placed)
+    .WithData(order)
+    .WithMessage("Order placed successfully")
     .Build();
 
-if (result is Success<User> success)
+if (result is Success<Order, OrderSuccessStatus, OrderFailureStatus> success)
 {
-    Console.WriteLine(success.Data!.Name);
+    Console.WriteLine(success.Status);   // OrderSuccessStatus.Placed
+    Console.WriteLine(success.Data!.Id);
     Console.WriteLine(success.Message);
 }
 ```
@@ -45,21 +66,24 @@ if (result is Success<User> success)
 Use `Unit` when an operation succeeds but has no return value:
 
 ```csharp
-var result = Result<Unit>.InitSuccess()
-    .WithMessage("Operation completed")
+var result = Result<Unit, OrderSuccessStatus, OrderFailureStatus>
+    .InitSuccess(OrderSuccessStatus.Cancelled)
+    .WithMessage("Order cancelled")
     .Build();
 ```
 
 ### Failure with errors
 
 ```csharp
-var result = Result<Order>.InitFailure()
+var result = Result<Order, OrderSuccessStatus, OrderFailureStatus>
+    .InitFailure(OrderFailureStatus.InvalidQuantity)
     .WithMessage("Order validation failed")
-    .AppendErrors(["Invalid quantity", "Product not found"])
+    .AppendErrors(["Quantity must be greater than zero"])
     .Build();
 
-if (result is Failure<Order> failure)
+if (result is Failure<Order, OrderSuccessStatus, OrderFailureStatus> failure)
 {
+    Console.WriteLine(failure.Status);   // OrderFailureStatus.InvalidQuantity
     Console.WriteLine(failure.Message);
     foreach (var error in failure.Errors)
     {
@@ -70,52 +94,54 @@ if (result is Failure<Order> failure)
 
 ## API Overview
 
-### `Result<T>`
+### `Result<T, TSuccessStatus, TFailureStatus>`
 
-The base type for all operation outcomes.
+The base type for all operation outcomes. Both status type parameters must be enums.
 
 | Member | Description |
 |--------|-------------|
 | `Message` | Optional message describing the outcome |
-| `InitSuccess()` | Starts building a success result |
-| `InitFailure()` | Starts building a failure result |
+| `InitSuccess(TSuccessStatus status)` | Starts building a success result with the required status |
+| `InitFailure(TFailureStatus status)` | Starts building a failure result with the required status |
 
-### `Success<T>`
+### `Success<T, TSuccessStatus, TFailureStatus>`
 
 Represents a successful operation.
 
 | Member | Description |
 |--------|-------------|
+| `Status` | The domain-defined success status |
 | `Data` | The success payload |
-| `Init()` | Alternative entry point for the success builder |
+| `Init(TSuccessStatus status)` | Alternative entry point for the success builder |
 
-### `Failure<T>`
+### `Failure<T, TSuccessStatus, TFailureStatus>`
 
 Represents a failed operation.
 
 | Member | Description |
 |--------|-------------|
+| `Status` | The domain-defined failure status |
 | `Errors` | List of error messages |
 | `AppendError(errors)` | Appends errors to the failure |
-| `Init()` | Alternative entry point for the failure builder |
+| `Init(TFailureStatus status)` | Alternative entry point for the failure builder |
 
 ### Builder methods
 
-**Success builder** (`IConfigureSuccessResultBuilder<T>`):
+**Success builder** (`IConfigureSuccessResultBuilder<T, TSuccessStatus, TFailureStatus>`):
 
 | Method | Description |
 |--------|-------------|
 | `WithData(T? data)` | Sets the success payload |
 | `WithMessage(string? message)` | Sets an optional message |
-| `Build()` | Returns the configured `Success<T>` |
+| `Build()` | Returns the configured `Success<T, TSuccessStatus, TFailureStatus>` |
 
-**Failure builder** (`IConfigureFailureResultBuilder<T>`):
+**Failure builder** (`IConfigureFailureResultBuilder<T, TSuccessStatus, TFailureStatus>`):
 
 | Method | Description |
 |--------|-------------|
 | `WithMessage(string message)` | Sets the failure message |
 | `AppendErrors(List<string> errors)` | Adds one or more error messages |
-| `Build()` | Returns the configured `Failure<T>` |
+| `Build()` | Returns the configured `Failure<T, TSuccessStatus, TFailureStatus>` |
 
 ### `Unit`
 
@@ -126,27 +152,50 @@ var unit = Unit.Value;
 var completed = await Unit.Task; // pre-completed Task<Unit>
 ```
 
-## Usage in Services
+## Usage in Domain Services
 
 ```csharp
-public Success<Customer> CreateCustomer(CreateCustomerRequest request)
+public Success<Order, OrderSuccessStatus, OrderFailureStatus> PlaceOrder(PlaceOrderCommand cmd)
 {
-    if (string.IsNullOrWhiteSpace(request.Name))
+    if (cmd.Quantity <= 0)
     {
-        return Result<Customer>.InitFailure()
+        return Result<Order, OrderSuccessStatus, OrderFailureStatus>
+            .InitFailure(OrderFailureStatus.InvalidQuantity)
             .WithMessage("Validation failed")
-            .AppendErrors(["Name is required"])
+            .AppendErrors(["Quantity must be greater than zero"])
             .Build();
     }
 
-    var customer = new Customer { Name = request.Name };
+    var order = Order.Place(cmd);
 
-    return Result<Customer>.InitSuccess()
-        .WithData(customer)
-        .WithMessage("Customer created")
+    return Result<Order, OrderSuccessStatus, OrderFailureStatus>
+        .InitSuccess(OrderSuccessStatus.Placed)
+        .WithData(order)
+        .WithMessage("Order placed")
         .Build();
 }
 ```
+
+## Mapping at the Application Layer
+
+```csharp
+if (result is Failure<Order, OrderSuccessStatus, OrderFailureStatus> failure)
+    return failure.Status switch
+    {
+        OrderFailureStatus.NotFound => Results.NotFound(failure.Message),
+        OrderFailureStatus.InvalidQuantity => Results.BadRequest(failure.Errors),
+        OrderFailureStatus.InsufficientStock => Results.UnprocessableEntity(failure.Message),
+        _ => Results.BadRequest(failure.Message)
+    };
+```
+
+## Domain Usage Checklist
+
+1. Define `XxxSuccessStatus` and `XxxFailureStatus` enums in the domain project
+2. Return `Success<T, XxxSuccessStatus, XxxFailureStatus>` or `Failure<...>` from domain services
+3. Use `InitSuccess(status)` / `InitFailure(status)` — status is always explicit
+4. Use `Message` and `Errors` for human-readable detail; use `Status` for programmatic branching
+5. Map domain status to HTTP, problem details, or integration events in application handlers
 
 ## Requirements
 
@@ -169,7 +218,7 @@ dotnet pack Core.Result.csproj -c Release
 git push origin main
 
 # 4. Push to NuGet
-dotnet nuget push "bin\Release\Core.Result.1.0.0.nupkg" `
+dotnet nuget push "bin\Release\Core.Result.1.1.0.nupkg" `
   --api-key YOUR_NUGET_API_KEY `
   --source https://api.nuget.org/v3/index.json
 ```
